@@ -119,6 +119,13 @@ class PhoneComponent(BasedStreamComponent):
             if len(self.warn_person_bboxes) > 0:
                 self.save_warning_images(frame, self.warn_person_bboxes)
                 self.warn_person_bboxes.clear()
+                # 交给reid模块处理并报警给后端 
+                print("尝试发送请求给reid等待计算结果")
+                data = {
+                    "query_directory": self.config.phone_warning_path,  #新增报警
+                    "gallery_directory":self.config.reid_gallery_path 
+                }
+                self.http_helper.post(uri=self.config.reid_uri, data=data) #(异步!!)🟥
             return mot_result
 
     def _phone_core(self, frame, input_mot, current_frame_id, width, height) -> bool:
@@ -163,6 +170,8 @@ class PhoneComponent(BasedStreamComponent):
             if phone_item.cls == 0:  # 持有手机，报警！
                 logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
+                
+                
                 self.warn_person_bboxes.append(ltrb)  # 报警人的包围框
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
                 self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
@@ -292,22 +301,22 @@ class PhoneComponent(BasedStreamComponent):
         im_with_rectangle = np.array(im_pil)
         return im_with_rectangle
 
-    def count_images_in_directory(self, directory):
-        # 返回目录中的jpg图片数量
-        return len(glob.glob(os.path.join(directory, '*.jpg')))
+    # def count_images_in_directory(self, directory):
+    #     # 返回目录中的jpg图片数量
+    #     return len(glob.glob(os.path.join(directory, '*.jpg')))
 
-    def clear_directory(self, directory):
-        # 删除目录中的所有文件
-        files = glob.glob(os.path.join(directory, '*'))
-        for f in files:
-            os.remove(f)
+    # def clear_directory(self, directory):
+    #     # 删除目录中的所有文件
+    #     files = glob.glob(os.path.join(directory, '*'))
+    #     for f in files:
+    #         os.remove(f)
 
     def check_and_save_timing_images(self, frame, all_bboxes):
         if frame is None:
             return
         # 检查是否启用了定时保存
         if not self.config.phone_timing_enable:
-            print("调试：定时保存功能未启用！")
+            print("注意：定时保存功能未启用！")
             return  # 如果未启用，则直接返回
 
         # 设置时间间隔为1秒

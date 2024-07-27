@@ -13,4 +13,6 @@ class PhoneInfo(BasedStreamInfo):
         self.phone_timing_path = "output/business/phone/timing"
         self.phone_timing_delta = 1
         self.phone_warning_uncropped_path = ""
+        self.reid_uri = "http://localhost:5000/process2"
+        self.reid_gallery_path = "res/images/reid_tmp_data/id_gt"
         super().__init__(data)  # 前面是声明，一定要最后调用这段赋值
